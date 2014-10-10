@@ -5,22 +5,20 @@
  * - retrieves and persists the model via the todoStorage service
  * - exposes the model to the template and provides event handlers
  */
-angular.module('todomvc')
-	.controller('TodoCtrl', function TodoCtrl($scope, $routeParams, $filter, todoStorage) {
-		'use strict';
-
-		var todos = $scope.todos = todoStorage.get();
+angular.module('todomvc', [])
+	.controller('todoCtrl', ['$scope', '$filter', '$http', function ($scope, $filter, $http) {
+		$scope.todos = {};
+		$http.get('/api/todos').success(function(data) {
+			$scope.todos = data;
+		});
 
 		$scope.newTodo = '';
 		$scope.editedTodo = null;
 
 		$scope.$watch('todos', function (newValue, oldValue) {
-			$scope.remainingCount = $filter('filter')(todos, { completed: false }).length;
-			$scope.completedCount = todos.length - $scope.remainingCount;
+			$scope.remainingCount = $filter('filter')($scope.todos, { completed: false }).length;
+			$scope.completedCount = $scope.todos.length - $scope.remainingCount;
 			$scope.allChecked = !$scope.remainingCount;
-			if (newValue !== oldValue) { // This prevents unneeded calls to the local storage
-				todoStorage.put(todos);
-			}
 		}, true);
 
 		// Monitor the current route for changes and adjust the filter accordingly.
@@ -33,31 +31,42 @@ angular.module('todomvc')
 		});
 
 		$scope.addTodo = function () {
-			var newTodo = $scope.newTodo.trim();
-			if (!newTodo.length) {
+			if (!$scope.newTodo.trim().length) {
 				return;
 			}
-
-			todos.push({
-				title: newTodo,
+			var newTodo = {
+				title: $scope.newTodo.trim(),
 				completed: false
+			};
+			$http.post('/api/todos', newTodo).success(function(data) {
+				$scope.newTodo = '';
+				$scope.todos = data;
 			});
-
-			$scope.newTodo = '';
 		};
 
 		$scope.editTodo = function (todo) {
 			$scope.editedTodo = todo;
 			// Clone the original todo to restore it on demand.
 			$scope.originalTodo = angular.extend({}, todo);
+
+		};
+
+		$scope.toggleTodo = function(todo) {
+			todo.completed = !todo.completed;
+			$http.put('/api/todos/' +  todo._id, todo);
 		};
 
 		$scope.doneEditing = function (todo) {
 			$scope.editedTodo = null;
 			todo.title = todo.title.trim();
-
 			if (!todo.title) {
 				$scope.removeTodo(todo);
+			} else {
+				var newTodo = {
+					title: todo.title,
+					completed: todo.completed
+				};
+				$http.put('/api/todos/' +  todo._id, newTodo);
 			}
 		};
 
@@ -67,18 +76,30 @@ angular.module('todomvc')
 		};
 
 		$scope.removeTodo = function (todo) {
-			todos.splice(todos.indexOf(todo), 1);
+			$http.delete('/api/todos/' + todo._id)
+				// if successful creation, call our get function to get all the new todos
+				.success(function(data) {
+					$scope.todos = data; // assign our new list of todos
+				});
 		};
 
 		$scope.clearCompletedTodos = function () {
-			$scope.todos = todos = todos.filter(function (val) {
-				return !val.completed;
+			$scope.todos.forEach(function(todo) {
+				if (todo.completed) {
+					$scope.removeTodo(todo);
+				}
 			});
 		};
 
 		$scope.markAll = function (completed) {
-			todos.forEach(function (todo) {
+			$scope.todos.forEach(function (todo) {
 				todo.completed = !completed;
+				$http.put('/api/todos/' +  todo._id, 
+					{title: todo.title, completed: todo.completed});
 			});
+			$http.get('/api/todos').success(function(data) {
+				$scope.todos = data;
+			});
+
 		};
-	});
+	}]);
