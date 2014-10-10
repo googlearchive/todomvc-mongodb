@@ -8,6 +8,7 @@
 		<script src="bower_components/todomvc-common/base.js"></script>
 		<script src="bower_components/angular/angular.js"></script>
 		<script src="bower_components/angular-route/angular-route.js"></script>
+		<script src="js/services/todoStorage.js"></script>
 		<script src="js/controllers/todoCtrl.js"></script>
 		<script src="js/directives/todoFocus.js"></script>
 		<script src="js/directives/todoEscape.js"></script>
@@ -47,17 +48,6 @@
 				<span id="todo-count"><strong>{{remainingCount}}</strong>
 					<ng-pluralize count="remainingCount" when="{ one: 'item left', other: 'items left' }"></ng-pluralize>
 				</span>
-				<ul id="filters">
-					<li>
-						<a ng-class="{selected: status == ''} " href="#/">All</a>
-					</li>
-					<li>
-						<a ng-class="{selected: status == 'active'}" href="#/active">Active</a>
-					</li>
-					<li>
-						<a ng-class="{selected: status == 'completed'}" href="#/completed">Completed</a>
-					</li>
-				</ul>
 				<button id="clear-completed" ng-click="clearCompletedTodos()" 
 					ng-show="completedCount">Clear completed ({{completedCount}})</button>
 			</footer>

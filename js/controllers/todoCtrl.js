@@ -5,10 +5,10 @@
  * - retrieves and persists the model via the todoStorage service
  * - exposes the model to the template and provides event handlers
  */
-angular.module('todomvc', [])
-	.controller('todoCtrl', ['$scope', '$filter', '$http', function ($scope, $filter, $http) {
+angular.module('todomvc')
+	.controller('todoCtrl', ['$scope', '$filter', 'todoStorage', function ($scope, $filter, todoStorage) {
 		$scope.todos = {};
-		$http.get('/api/todos').success(function(data) {
+		todoStorage.get().success(function(data) {
 			$scope.todos = data;
 		});
 
@@ -21,15 +21,6 @@ angular.module('todomvc', [])
 			$scope.allChecked = !$scope.remainingCount;
 		}, true);
 
-		// Monitor the current route for changes and adjust the filter accordingly.
-		$scope.$on('$routeChangeSuccess', function () {
-			var status = $scope.status = $routeParams.status || '';
-
-			$scope.statusFilter = (status === 'active') ?
-				{ completed: false } : (status === 'completed') ?
-				{ completed: true } : null;
-		});
-
 		$scope.addTodo = function () {
 			if (!$scope.newTodo.trim().length) {
 				return;
@@ -38,7 +29,7 @@ angular.module('todomvc', [])
 				title: $scope.newTodo.trim(),
 				completed: false
 			};
-			$http.post('/api/todos', newTodo).success(function(data) {
+			todoStorage.post(newTodo).success(function(data) {
 				$scope.newTodo = '';
 				$scope.todos = data;
 			});
@@ -53,7 +44,7 @@ angular.module('todomvc', [])
 
 		$scope.toggleTodo = function(todo) {
 			todo.completed = !todo.completed;
-			$http.put('/api/todos/' +  todo._id, todo);
+			todoStorage.put(todo._id, todo);
 		};
 
 		$scope.doneEditing = function (todo) {
@@ -66,7 +57,7 @@ angular.module('todomvc', [])
 					title: todo.title,
 					completed: todo.completed
 				};
-				$http.put('/api/todos/' +  todo._id, newTodo);
+				todoStorage.put(todo._id, newTodo);
 			}
 		};
 
@@ -76,11 +67,9 @@ angular.module('todomvc', [])
 		};
 
 		$scope.removeTodo = function (todo) {
-			$http.delete('/api/todos/' + todo._id)
-				// if successful creation, call our get function to get all the new todos
-				.success(function(data) {
-					$scope.todos = data; // assign our new list of todos
-				});
+			todoStorage.delete(todo).success(function(data) {
+				$scope.todos = data; // assign our new list of todos
+			});
 		};
 
 		$scope.clearCompletedTodos = function () {
@@ -94,10 +83,10 @@ angular.module('todomvc', [])
 		$scope.markAll = function (completed) {
 			$scope.todos.forEach(function (todo) {
 				todo.completed = !completed;
-				$http.put('/api/todos/' +  todo._id, 
+				todoStorage.put(todo._id, 
 					{title: todo.title, completed: todo.completed});
 			});
-			$http.get('/api/todos').success(function(data) {
+			todoStorage.get().success(function(data) {
 				$scope.todos = data;
 			});
 
