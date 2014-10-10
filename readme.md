@@ -5,14 +5,7 @@ TodoMVC is a project which offers the same Todo application implemented using MV
 # ![TodoMVC](media/logo.png)
 ### [Website](http://todomvc.com)&nbsp;&nbsp;&nbsp;&nbsp;[Blog](http://blog.tastejs.com)&nbsp;&nbsp;&nbsp;&nbsp;[TasteJS](http://tastejs.com)
 
-## View & Run in Web IDE
-
-Click on the button below to view the code in a Web IDE. Feel free to edit the code and then run it all from your browser.
-
-[![IDE](site-assets/editcloud9.png)](https://c9.io/open/git/?url=git://github.com/tastejs/todomvc.git)
-[![IDE](https://codio-public.s3.amazonaws.com/sharing/demo-in-ide.png)](https://codio.com/p/create/?from_github=tastejs/todomvc)
-
-This app modifies the TodoMVC angularJS by adding a NodeJS api that talks to MonogoDB to store the todo items.
+## Run the app
 
 To get the app running, follow the instructions below:
 - Install and run MongoDB
