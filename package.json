@@ -12,5 +12,9 @@
     "body-parser": "~1.5.2",
     "method-override": "~2.1.2",
     "optimist": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/GoogleCloudPlatform/todomvc-mongodb.git"
   }
 }
