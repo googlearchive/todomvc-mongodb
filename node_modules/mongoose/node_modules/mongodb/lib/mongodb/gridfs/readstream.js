@@ -36,7 +36,8 @@ function ReadStream(autoclose, gstore) {
   this.readable = true;
   this.pendingChunk = null;
   this.executing = false;  
-  
+  this.destroyed = false;
+
   // Calculate the number of chunks
   this.numberOfChunks = Math.ceil(gstore.length/gstore.chunkSize);
 
@@ -99,51 +100,62 @@ ReadStream.prototype._execute = function() {
     data = gstore.currentChunk.readSlice(gstore.currentChunk.length());
   }
 
+  var processNext = function() {
+    if(last === true) {
+      self.readable = false;
+      self.emit("end");
+      
+      if(self.autoclose === true) {
+        if(gstore.mode[0] == "w") {
+          gstore.close(function(err, doc) {
+            if (err) {
+              self.emit("error", err);
+              return;
+            }
+            self.readable = false;  
+            self.destroyed = true;        
+            self.emit("close", doc);
+          });
+        } else {
+          self.readable = false;
+          self.destroyed = true;        
+          self.emit("close");
+        }
+      }
+    } else {
+      gstore._nthChunk(gstore.currentChunk.chunkNumber + 1, function(err, chunk) {
+        if(err) {
+          self.readable = false;
+          if(self.listeners("error").length > 0)
+            self.emit("error", err);
+          self.executing = false;
+          return;
+        }
+
+        self.pendingChunk = chunk;
+        if(self.paused === true) {
+          self.executing = false;
+          return;
+        }
+
+        gstore.currentChunk = self.pendingChunk;
+        self._execute();        
+      });
+    }    
+  }
+
   // Return the data
   if(data != null && gstore.currentChunk.chunkNumber == self.currentChunkNumber) {
     self.currentChunkNumber = self.currentChunkNumber + 1;
     self.completedLength += data.length;
     self.pendingChunk = null;
-    self.emit("data", data);
-  }
-
-  if(last === true) {
-    self.readable = false;
-    self.emit("end");
-    
-    if(self.autoclose === true) {
-      if(gstore.mode[0] == "w") {
-        gstore.close(function(err, doc) {
-          if (err) {
-            self.emit("error", err);
-            return;
-          }
-          self.readable = false;          
-          self.emit("close", doc);
-        });
-      } else {
-        self.readable = false;
-        self.emit("close");
-      }
-    }
+    // Send the data
+    process.nextTick(function() {
+      self.emit("data", data); 
+      processNext();           
+    })
   } else {
-    gstore._nthChunk(gstore.currentChunk.chunkNumber + 1, function(err, chunk) {
-      if(err) {
-        self.readable = false;
-        self.emit("error", err);
-        self.executing = false;
-        return;
-      }
-
-      self.pendingChunk = chunk;
-      if(self.paused === true) {
-        self.executing = false;
-        return;
-      }
-
-      gstore.currentChunk = self.pendingChunk;
-      self._execute();        
-    });
+    processNext();
   }
 };
 
@@ -166,6 +178,8 @@ ReadStream.prototype.pause = function() {
  * @api public
  */
 ReadStream.prototype.destroy = function() {
+  if(this.destroyed) return;
+  this.destroyed = true;
   this.readable = false;
   // Emit close event
   this.emit("close");
