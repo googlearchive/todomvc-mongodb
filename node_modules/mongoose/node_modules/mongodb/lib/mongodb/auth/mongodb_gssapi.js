@@ -15,6 +15,10 @@ try {
 var authenticate = function(db, username, password, authdb, options, callback) {
   var numberOfConnections = 0;
   var errorObject = null;  
+  var numberOfValidConnections = 0;
+  var credentialsValid = false;
+  options = options || {};
+  
   // We don't have the Kerberos library
   if(Kerberos == null) return callback(new Error("Kerberos library is not installed"));  
 
@@ -30,7 +34,7 @@ var authenticate = function(db, username, password, authdb, options, callback) {
   // Grab all the connections
   var connections = options['connection'] != null ? [options['connection']] : db.serverConfig.allRawConnections();
   var gssapiServiceName = options['gssapiServiceName'] || 'mongodb';
-  var error = null;
+
   // Authenticate all connections
   for(var i = 0; i < numberOfConnections; i++) {
 
@@ -38,16 +42,35 @@ var authenticate = function(db, username, password, authdb, options, callback) {
     GSSAPIInitialize(db, username, password, authdb, gssapiServiceName, connections[i], function(err, result) {
       // Adjust number of connections left to connect
       numberOfConnections = numberOfConnections - 1;
-      // If we have an error save it
-      if(err) error = err;
 
-      // We are done
-      if(numberOfConnections == 0) {
-        if(err) return callback(error, false);
-        // We authenticated correctly save the credentials
-        db.serverConfig.auth.add('GSSAPI', db.databaseName, username, password, authdb, gssapiServiceName);
-        // Return valid callback
-        return callback(null, true);
+      // Ensure we save any error
+      if(err) { 
+        errorObject = err;
+      } else {
+        credentialsValid = true;
+        numberOfValidConnections = numberOfValidConnections + 1;
+      }
+
+      // Work around the case where the number of connections are 0
+      if(numberOfConnections <= 0 && typeof callback == 'function') {
+        var internalCallback = callback;
+        callback = null;
+
+        // We are done
+        if(errorObject == null && numberOfConnections == 0) {
+          // We authenticated correctly save the credentials
+          db.serverConfig.auth.add('GSSAPI', db.databaseName, username, password, authdb, gssapiServiceName);
+          // Return valid callback
+          return internalCallback(null, true);
+        } else if(numberOfValidConnections > 0 && numberOfValidConnections != numberOfConnections
+          && credentialsValid) {
+            // We authenticated correctly save the credentials
+            db.serverConfig.auth.add('GSSAPI', db.databaseName, username, password, authdb, gssapiServiceName);
+            // Return valid callback
+            return internalCallback(null, true);
+        } else {
+          return internalCallback(errorObject, false);        
+        }
       }
     });    
   }
