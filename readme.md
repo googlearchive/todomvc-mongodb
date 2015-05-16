@@ -8,7 +8,7 @@ TodoMVC is a project which offers the same Todo application implemented using MV
 ## Run the app
 
 To get the app running, follow the instructions below:
-- Install and run MongoDB <br/>
+- Install and run [MongoDB][1] <br/>
 	`$ sudo apt-get install mongodb`  
 	`$ sudo service mongodb stop`  
 	`$ sudo mkdir $HOME/db ; sudo mongod --dbpath $HOME/db --port 80 --fork --logpath /var/tmp/mongodb`  
@@ -22,3 +22,5 @@ To get the app running, follow the instructions below:
 Everything in this repo is MIT License unless otherwise specified.
 
 MIT © Addy Osmani, Sindre Sorhus, Pascal Hartig, Stephen Sawchuk.
+
+[1]: http://www.mongodb.com/
