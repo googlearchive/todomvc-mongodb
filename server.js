@@ -33,7 +33,7 @@
 
 	// configuration =================
 
-	mongoose.connect('mongodb://' + argv.be_ip + ':80/my_database');
+	mongoose.connect('mongodb://root:<admin-password>@' + argv.be_ip');
 
     	app.use('/js', express.static(__dirname + '/js'));
    	 app.use('/bower_components', express.static(__dirname + '/bower_components'));
